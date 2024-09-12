@@ -1,8 +1,8 @@
 import math
 from datetime import datetime, time
 from typing import List, Tuple
-from toolz import curry, pipe, compose
-from toolz.curried import map, filter, take
+from toolz import curry, pipe, compose, first, second, nth, pluck, get_in, assoc, partition
+from toolz.curried import map, filter, take, reduce
 from itertools import product
 
 from models.aircraft import Aircraft
@@ -18,7 +18,6 @@ _pilots: List[Pilot] = []
 _aircraft: List[Aircraft] = []
 _targets: List[Target] = []
 
-
 def load_data(pilots: List[Pilot], aircraft: List[Aircraft], targets: List[Target]):
     global _pilots, _aircraft, _targets
     _pilots, _aircraft, _targets = pilots, aircraft, targets
@@ -28,11 +27,11 @@ def save_recommendations_to_csv(filename: str):
 
 @curry
 def get_weather_conditions(weather_data: dict, target: Target) -> Weather:
-    city_data = weather_data.get(target.city, {})
+    city_data = get_in([target.city], weather_data, {})
     return Weather(
-        weather=city_data.get('weather', 'No data'),
-        clouds=city_data.get('clouds', 0),
-        wind_speed=city_data.get('wind_speed', 0)
+        weather=get_in(['weather'], city_data, 'No data'),
+        clouds=get_in(['clouds'], city_data, 0),
+        wind_speed=get_in(['wind_speed'], city_data, 0)
     )
 
 def calculate_distance(target: Target) -> float:
@@ -64,23 +63,19 @@ def create_mission(weather_func, target: Target, aircraft: Aircraft, pilot: Pilo
 @curry
 def has_sufficient_fuel(aircraft: Aircraft, distance: float) -> bool:
     return aircraft.fuel_capacity >= (distance * 2) / aircraft.fuel_capacity
+
 def get_recommendations() -> List[Mission]:
-    if not (_pilots and _aircraft and _targets):
+    if not all([_pilots, _aircraft, _targets]):
         return []
 
-    weather_data = load_weather_data()
-    if isinstance(weather_data, list) and weather_data:
-        weather_data = weather_data[0]
-
+    weather_data = first(load_weather_data() or [{}])
     weather_func = get_weather_conditions(weather_data)
 
     def create_missions():
-        used_pilots = set()
-        used_aircraft = set()
-        used_targets = set()  # Keep track of used targets
-
+        used_resources = set()
         for target, aircraft, pilot in product(_targets, _aircraft, _pilots):
-            if pilot in used_pilots or aircraft in used_aircraft or target in used_targets:
+            resource_tuple = (target, aircraft, pilot)
+            if any(r in used_resources for r in resource_tuple):
                 continue
 
             distance = calculate_distance(target)
@@ -88,16 +83,56 @@ def get_recommendations() -> List[Mission]:
                 continue
 
             mission = create_mission(weather_func, target, aircraft, pilot)
-            used_pilots.add(pilot)
-            used_aircraft.add(aircraft)
-            used_targets.add(target)  # Mark the target as used
+            used_resources.update(resource_tuple)
             yield mission
 
-    # Convert generator to list before sorting
-    missions = list(create_missions())
-
     return pipe(
-        sorted(missions, key=lambda m: m.score, reverse=True),  # Sort based on score
-        take(7),  # Take top 7 missions
-        list  # Convert back to list
+        create_missions(),
+        list,
+        lambda missions: sorted(missions, key=lambda m: m.score, reverse=True),
+        take(7),
+        list
+    )
+
+# Additional improvements using functional programming concepts
+def get_top_pilots(n: int) -> List[Pilot]:
+    return pipe(
+        _pilots,
+        lambda pilots: sorted(pilots, key=lambda p: p.experience, reverse=True),
+        take(n),
+        list
+    )
+
+def get_long_range_aircraft() -> List[Aircraft]:
+    return pipe(
+        _aircraft,
+        filter(lambda a: a.fuel_capacity > 5000),
+        list
+    )
+
+def get_high_priority_targets() -> List[Target]:
+    return pipe(
+        _targets,
+        filter(lambda t: t.priority > 8),
+        list
+    )
+
+def analyze_mission_distances() -> Tuple[float, float, float]:
+    distances = pipe(
+        get_recommendations(),
+        map(lambda m: m.distance),
+        list
+    )
+    return (
+        reduce(min, distances),
+        reduce(max, distances),
+        sum(distances) / len(distances) if distances else 0
+    )
+
+def group_missions_by_aircraft_type() -> dict:
+    return pipe(
+        get_recommendations(),
+        partition(2),
+        map(lambda group: (first(group).aircraft.type, list(pluck('target', group)))),
+        dict
     )
