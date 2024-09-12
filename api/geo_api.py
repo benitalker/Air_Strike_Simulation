@@ -30,7 +30,6 @@ def save_city_coordinates(cities: List[str], filename: str) -> None:
     with open(filename, 'w') as file:
         json.dump(city_coords, file, indent=4)
 
-# Example usage
 cities = ['Damascus', 'Beirut', 'Amman', 'Cairo', 'Baghdad', 'Tehran', 'Riyadh', 'Tripoli', 'Ankara', 'Khartoum', 'Gaza City', 'Sanaa', 'Manama', 'Kuwait City', 'Doha']
-  # List all cities you want to fetch coordinates for
+  
 save_city_coordinates(cities, "../assets/city_coordinates.json")
