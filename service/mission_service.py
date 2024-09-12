@@ -13,7 +13,7 @@ from models.weather import Weather
 from repository.csv_repository import write_missions_to_csv
 from repository.json_repository import load_weather_data
 
-# Global variables for data
+
 _pilots: List[Pilot] = []
 _aircraft: List[Aircraft] = []
 _targets: List[Target] = []
@@ -94,7 +94,7 @@ def get_recommendations() -> List[Mission]:
         list
     )
 
-# Additional improvements using functional programming concepts
+
 def get_top_pilots(n: int) -> List[Pilot]:
     return pipe(
         _pilots,
