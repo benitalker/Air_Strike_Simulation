@@ -1,25 +1,28 @@
 from models.weather import Weather
+from toolz import curry, compose
+from toolz.curried import get
+
+weather_scores = {
+    "Clear": 1.0,
+    "Clouds": 0.7,
+    "Rain": 0.4,
+    "Stormy": 0.2
+}
+
+@curry
+def adjust_score(factor, max_value, value, score):
+    return score - (value / max_value) * factor
+
+cloud_adjustment = adjust_score(0.3, 100)
+wind_adjustment = adjust_score(0.2, 20)
 
 def _cal_weather_score(weather: Weather) -> float:
-    condition = weather.weather
-    clouds = weather.clouds
-    wind_speed = weather.wind_speed
-
-    if condition == "Clear":
-        score = 1.0
-    elif condition == "Clouds":
-        score = 0.7
-    elif condition == "Rain":
-        score = 0.4
-    elif condition == "Stormy":
-        score = 0.2
-    else:
-        score = 0
-
-    score -= (clouds / 100) * 0.3
-    score -= (wind_speed / 20) * 0.2
-
-    return max(0, min(score, 1))
+    return compose(
+        lambda x: max(0, min(x, 1)),
+        wind_adjustment(weather.wind_speed),
+        cloud_adjustment(weather.clouds),
+        get(weather.weather, default=0)
+    )(weather_scores)
 
 class Mission:
     def __init__(self, target, aircraft, pilot, weather_conditions, distance, execution_time):
@@ -32,19 +35,21 @@ class Mission:
         self.score = self.calculate_score()
 
     def calculate_score(self) -> float:
-        distance_score = max(0, 100 - self.distance)
-        aircraft_score = self.aircraft.calculate_total_score()
-        pilot_score = self.pilot.skill
-        weather_score1 = _cal_weather_score(self.weather_conditions)
-        execution_time_score = 100
-
-        # Weighted calculation
-        score = (distance_score * 0.20 +
-                 aircraft_score * 0.25 +
-                 pilot_score * 0.25 +
-                 weather_score1 * 0.20 +
-                 execution_time_score * 0.10)
-        return score
+        scores = {
+            'distance': max(0, 100 - self.distance),
+            'aircraft': self.aircraft.calculate_total_score(),
+            'pilot': self.pilot.skill,
+            'weather': _cal_weather_score(self.weather_conditions),
+            'execution_time': 100
+        }
+        weights = {
+            'distance': 0.20,
+            'aircraft': 0.25,
+            'pilot': 0.25,
+            'weather': 0.20,
+            'execution_time': 0.10
+        }
+        return sum(scores[key] * weights[key] for key in scores)
 
     def __str__(self) -> str:
         return (f"Target City: {self.target.city}, Priority: {self.target.priority}, "
