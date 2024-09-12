@@ -14,7 +14,7 @@ def fetch_and_save_weather_data(cities: List[str], filename: str):
 
         if response.status_code == 200:
             data = response.json()
-            target_datetime = "2024-09-13 00:00:00"  # Example target datetime
+            target_datetime = "2024-09-13 00:00:00"
 
             for entry in data['list']:
                 if entry['dt_txt'] == target_datetime:
@@ -38,7 +38,7 @@ def fetch_and_save_weather_data(cities: List[str], filename: str):
         json.dump(weather_data, file, indent=4)
 
 
-# Example usage:
+
 cities = ["Damascus", "Beirut", "Amman", "Cairo", "Baghdad", "Tehran", "Riyadh", "Tripoli", "Ankara", "Khartoum",
           "Gaza City", "Sanaa", "Manama", "Kuwait City", "Doha"]
 fetch_and_save_weather_data(cities, '../assets/weather_data.json')
