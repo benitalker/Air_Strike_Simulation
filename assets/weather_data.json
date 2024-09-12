@@ -1,0 +1,74 @@
+[
+{
+    "Damascus": {
+        "weather": "Clear",
+        "clouds": 0,
+        "wind_speed": 3.66
+    },
+    "Beirut": {
+        "weather": "Clear",
+        "clouds": 0,
+        "wind_speed": 2.56
+    },
+    "Amman": {
+        "weather": "Clear",
+        "clouds": 0,
+        "wind_speed": 1.63
+    },
+    "Cairo": {
+        "weather": "Clear",
+        "clouds": 0,
+        "wind_speed": 5.11
+    },
+    "Baghdad": {
+        "weather": "Clear",
+        "clouds": 0,
+        "wind_speed": 6.25
+    },
+    "Tehran": {
+        "weather": "Clear",
+        "clouds": 4,
+        "wind_speed": 0.73
+    },
+    "Riyadh": {
+        "weather": "Clear",
+        "clouds": 8,
+        "wind_speed": 1.04
+    },
+    "Tripoli": {
+        "weather": "Rain",
+        "clouds": 51,
+        "wind_speed": 6.41
+    },
+    "Ankara": {
+        "weather": "Clear",
+        "clouds": 0,
+        "wind_speed": 1.03
+    },
+    "Khartoum": {
+        "weather": "Clouds",
+        "clouds": 53,
+        "wind_speed": 3.06
+    },
+    "Sanaa": {
+        "weather": "Clouds",
+        "clouds": 98,
+        "wind_speed": 0.73
+    },
+    "Manama": {
+        "weather": "Clear",
+        "clouds": 0,
+        "wind_speed": 4.42
+    },
+    "Kuwait City": {
+        "weather": "Clear",
+        "clouds": 0,
+        "wind_speed": 7.83
+    },
+    "Doha": {
+        "weather": "Clear",
+        "clouds": 0,
+        "wind_speed": 3.42
+    }
+}
+]
