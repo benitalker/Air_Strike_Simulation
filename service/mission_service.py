@@ -1,8 +1,7 @@
 import math
 from datetime import datetime, time
 from typing import List, Tuple
-from toolz import curry, pipe, compose, first, second, nth, pluck, get_in, assoc, partition
-from toolz.curried import map, filter, take, reduce
+from toolz import curry, pipe, first, get_in, take, reduce, filter, map
 from itertools import product
 
 from models.aircraft import Aircraft
@@ -70,35 +69,45 @@ def get_recommendations() -> List[Mission]:
     weather_data = first(load_weather_data() or [{}])
     weather_func = get_weather_conditions(weather_data)
 
-    def create_missions():
-        used_resources = set()
-        for target, aircraft, pilot in product(_targets, _aircraft, _pilots):
-            resource_tuple = (target, aircraft, pilot)
-            if any(r in used_resources for r in resource_tuple):
-                continue
+    mission_combinations = product(_targets, _aircraft, _pilots)
 
-            distance = calculate_distance(target)
-            if not has_sufficient_fuel(aircraft, distance):
-                continue
+    def mission_valid(combination):
+        target, aircraft, pilot = combination
+        distance = calculate_distance(target)
+        return has_sufficient_fuel(aircraft, distance)
 
-            mission = create_mission(weather_func, target, aircraft, pilot)
-            used_resources.update(resource_tuple)
-            yield mission
+    def create_mission_with_check(combination):
+        target, aircraft, pilot = combination
+        return create_mission(weather_func, target, aircraft, pilot)
 
-    return pipe(
-        create_missions(),
-        list,
-        lambda missions: sorted(missions, key=lambda m: m.score, reverse=True),
-        take(7),
+    used_resources = set()
+
+    def filter_redundant_missions(combination):
+        if any(r in used_resources for r in combination):
+            return False
+        used_resources.update(combination)
+        return True
+
+    valid_missions = pipe(
+        mission_combinations,
+        lambda combos: filter(mission_valid, combos),
+        lambda combos: filter(filter_redundant_missions, combos),
+        lambda combos: map(create_mission_with_check, combos),
         list
     )
 
+    return pipe(
+        valid_missions,
+        lambda missions: sorted(missions, key=lambda m: m.score, reverse=True),
+        lambda missions: take(7, missions),
+        list
+    )
 
 def get_top_pilots(n: int) -> List[Pilot]:
     return pipe(
         _pilots,
         lambda pilots: sorted(pilots, key=lambda p: p.experience, reverse=True),
-        take(n),
+        lambda pilots: take(n, pilots),
         list
     )
 
@@ -131,7 +140,9 @@ def analyze_mission_distances() -> Tuple[float, float, float]:
 def group_missions_by_aircraft_type() -> dict:
     return pipe(
         get_recommendations(),
-        partition(2),
-        map(lambda group: (first(group).aircraft.type, list(pluck('target', group)))),
-        dict
+        lambda missions: reduce(
+            lambda acc, m: {**acc, m.aircraft.type: acc.get(m.aircraft.type, []) + [m.target]},
+            missions,
+            {}
+        )
     )

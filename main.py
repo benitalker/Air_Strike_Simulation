@@ -73,7 +73,7 @@ def execute_menu_choice(choice):
     if choice == '4':
         print("Exiting the program.")
         return False
-    
+
     action = get_in([choice, 1], menu_options)
     if action:
         globals()[action]()
