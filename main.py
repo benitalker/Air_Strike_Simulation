@@ -15,8 +15,8 @@ menu_options = {
 }
 
 @curry
-def load_file(reader_func, file_path):
-    return reader_func(file_path)
+def load_file(reader_func, file_path, *extra_args):
+    return reader_func(file_path, *extra_args)
 
 def load_files():
     file_loaders = [
@@ -24,10 +24,10 @@ def load_files():
         ('aircraft', load_file(read_aircraft_from_json, './assets/aircraft.json')),
         ('targets', load_file(read_targets_from_json, './assets/targets.json', './assets/city_coordinates.json'))
     ]
-    
+
     global global_data
-    global_data = reduce(lambda acc, item: assoc(acc, first(item), second(item)()), file_loaders, {})
-    
+    global_data = reduce(lambda acc, item: assoc(acc, first(item), second(item)), file_loaders, {})
+
     mission_service.load_data(**global_data)
     print("Files loaded successfully!")
 
